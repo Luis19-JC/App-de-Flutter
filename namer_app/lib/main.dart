@@ -40,18 +40,31 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen>
+    with TickerProviderStateMixin {
   bool _showLogo = true;
+  late final AnimationController _lottieController;
 
   @override
   void initState() {
     super.initState();
+
+    // Crear controller de Lottie
+    _lottieController = AnimationController(vsync: this);
+
     // Logo dura 2 segundos
     Future.delayed(const Duration(seconds: 2), () {
       setState(() {
         _showLogo = false; // iniciar fade out
       });
+      _lottieController.forward(); // iniciar Lottie
     });
+  }
+
+  @override
+  void dispose() {
+    _lottieController.dispose();
+    super.dispose();
   }
 
   @override
@@ -61,16 +74,20 @@ class _SplashScreenState extends State<SplashScreen> {
       body: Stack(
         alignment: Alignment.center,
         children: [
-          // Lottie siempre lista debajo del logo
+          // Lottie detrás del logo
           Lottie.asset(
             'assets/Loading_splash.json',
+            controller: _lottieController,
             width: 250,
             height: 250,
             onLoaded: (composition) {
-              Future.delayed(composition.duration, () {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (_) => const MyHomePage()),
-                );
+              _lottieController.duration = composition.duration;
+              _lottieController.addStatusListener((status) {
+                if (status == AnimationStatus.completed) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const MyHomePage()),
+                  );
+                }
               });
             },
           ),
