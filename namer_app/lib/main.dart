@@ -1,35 +1,106 @@
 import 'package:english_words/english_words.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
+import 'package:lottie/lottie.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyAppWithSplash());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+// ===========================================
+// APP CON SPLASH
+// ===========================================
+class MyAppWithSplash extends StatelessWidget {
+  const MyAppWithSplash({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => MyAppState(),
+      create: (_) => MyAppState(),
       child: MaterialApp(
+        debugShowCheckedModeBanner: false,
         title: 'Namer App',
         theme: ThemeData(
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
         ),
-        home: MyHomePage(),
+        home: const SplashScreen(),
       ),
     );
   }
 }
 
+// ===========================================
+// SPLASH SCREEN
+// ===========================================
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  bool _showLogo = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Logo dura 2 segundos
+    Future.delayed(const Duration(seconds: 2), () {
+      setState(() {
+        _showLogo = false; // iniciar fade out
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFD1C4E9), // fondo morado claro
+      body: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Lottie siempre lista debajo del logo
+          Lottie.asset(
+            'assets/Loading_splash.json',
+            width: 250,
+            height: 250,
+            onLoaded: (composition) {
+              Future.delayed(composition.duration, () {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (_) => const MyHomePage()),
+                );
+              });
+            },
+          ),
+
+          // Logo encima con fade out
+          AnimatedOpacity(
+            opacity: _showLogo ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 500),
+            child: Container(
+              color: Colors.white, // fondo blanco solo detrás del logo
+              child: Center(
+                child: Image.asset(
+                  'assets/minecraft_logo.png',
+                  width: 200,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ===========================================
+// ESTADO DE LA APP
+// ===========================================
 class MyAppState extends ChangeNotifier {
   var current = WordPair.random();
 
-  // ↓ Add this.
   void getNext() {
     current = WordPair.random();
     notifyListeners();
@@ -47,9 +118,12 @@ class MyAppState extends ChangeNotifier {
   }
 }
 
-// ...
-
+// ===========================================
+// PÁGINA PRINCIPAL
+// ===========================================
 class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
+
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
@@ -78,7 +152,7 @@ class _MyHomePageState extends State<MyHomePage> {
             SafeArea(
               child: NavigationRail(
                 extended: constraints.maxWidth >= 600,
-                destinations: [
+                destinations: const [
                   NavigationRailDestination(
                     icon: Icon(Icons.home),
                     label: Text('Home'),
@@ -109,25 +183,25 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
+// ===========================================
+// GENERATOR PAGE
+// ===========================================
 class GeneratorPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
     var pair = appState.current;
 
-    IconData icon;
-    if (appState.favorites.contains(pair)) {
-      icon = Icons.favorite;
-    } else {
-      icon = Icons.favorite_border;
-    }
+    IconData icon = appState.favorites.contains(pair)
+        ? Icons.favorite
+        : Icons.favorite_border;
 
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           BigCard(pair: pair),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -136,14 +210,14 @@ class GeneratorPage extends StatelessWidget {
                   appState.toggleFavorite();
                 },
                 icon: Icon(icon),
-                label: Text('Like'),
+                label: const Text('Like'),
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               ElevatedButton(
                 onPressed: () {
                   appState.getNext();
                 },
-                child: Text('Next'),
+                child: const Text('Next'),
               ),
             ],
           ),
@@ -153,14 +227,11 @@ class GeneratorPage extends StatelessWidget {
   }
 }
 
-// ...
-
+// ===========================================
+// BIG CARD
+// ===========================================
 class BigCard extends StatelessWidget {
-  const BigCard({
-    super.key,
-    required this.pair,
-  });
-
+  const BigCard({super.key, required this.pair});
   final WordPair pair;
 
   @override
@@ -184,29 +255,27 @@ class BigCard extends StatelessWidget {
   }
 }
 
-// ...
-
+// ===========================================
+// FAVORITES PAGE
+// ===========================================
 class FavoritesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
 
     if (appState.favorites.isEmpty) {
-      return Center(
-        child: Text('No favorites yet.'),
-      );
+      return const Center(child: Text('No favorites yet.'));
     }
 
     return ListView(
       children: [
         Padding(
           padding: const EdgeInsets.all(20),
-          child: Text('You have '
-              '${appState.favorites.length} favorites:'),
+          child: Text('You have ${appState.favorites.length} favorites:'),
         ),
         for (var pair in appState.favorites)
           ListTile(
-            leading: Icon(Icons.favorite),
+            leading: const Icon(Icons.favorite),
             title: Text(pair.asLowerCase),
           ),
       ],
